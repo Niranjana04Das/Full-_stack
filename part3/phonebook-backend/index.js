@@ -2,6 +2,8 @@ const express = require('express')
 const app = express()
 const cors = require('cors')
 const path = require('path')
+require('dotenv').config()
+const url = process.env.MONGODB_URI
 
 app.use(cors())
 app.use(express.json())

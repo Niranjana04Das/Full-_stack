@@ -1,28 +1,38 @@
 const mongoose = require('mongoose')
-require('dotenv').config()
 
-const url = process.env.MONGODB_URI
+const phoneValidator = (number) => {
 
-mongoose.set('strictQuery', false)
+  const regex = /^\d{2,3}-\d+$/
 
-mongoose.connect(url)
-  .then(() => {
-    console.log('connected to MongoDB')
-  })
-  .catch(error => {
-    console.log('error connecting to MongoDB:', error.message)
-  })
+  if (!regex.test(number)) {
+    return false
+  }
+
+  if (number.length < 8) {
+    return false
+  }
+
+  return true
+}
 
 const personSchema = new mongoose.Schema({
+
   name: {
     type: String,
-    required: true,
-    minlength: 3
+    minlength: 3,
+    required: true
   },
+
   number: {
     type: String,
-    required: true
+    required: true,
+
+    validate: {
+      validator: phoneValidator,
+      message: props => `${props.value} is not a valid phone number`
+    }
   }
+
 })
 
 personSchema.set('toJSON', {

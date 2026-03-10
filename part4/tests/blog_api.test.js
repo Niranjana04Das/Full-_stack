@@ -132,4 +132,17 @@ test('a blog can be updated', async () => {
 
   assert.strictEqual(response.body.likes, blogToUpdate.likes + 5)
 })
+test('adding blog fails without token', async () => {
+
+  const newBlog = {
+    title: 'Token test',
+    author: 'Tester',
+    url: 'http://test.com'
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(401)
+})
 })

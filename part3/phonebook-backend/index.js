@@ -1,66 +1,61 @@
 const express = require('express')
-const app = express()
 const cors = require('cors')
-const path = require('path')
 require('dotenv').config()
-const url = process.env.MONGODB_URI
+
+const Person = require('./models/person')
+const middleware = require('./utils/middleware')
+
+const app = express()
 
 app.use(cors())
 app.use(express.json())
 
-// Serve frontend build
-app.use(express.static('dist'))
+/* ---------------- GET ALL PERSONS ---------------- */
 
-let persons = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456"
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523"
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345"
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122"
-  }
-]
+app.get('/api/persons', (request, response, next) => {
 
-// GET all persons
-app.get('/api/persons', (request, response) => {
-  response.json(persons)
+  Person.find({})
+    .then(persons => {
+      response.json(persons)
+    })
+    .catch(error => next(error))
+
 })
 
-// GET single person
-app.get('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id)
-  const person = persons.find(p => p.id === id)
+/* ---------------- GET PERSON BY ID ---------------- */
 
-  if (person) {
-    response.json(person)
-  } else {
-    response.status(404).end()
-  }
+app.get('/api/persons/:id', (request, response, next) => {
+
+  Person.findById(request.params.id)
+    .then(person => {
+
+      if (person) {
+        response.json(person)
+      } else {
+        response.status(404).end()
+      }
+
+    })
+    .catch(error => next(error))
+
 })
 
-// DELETE person
-app.delete('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id)
-  persons = persons.filter(p => p.id !== id)
+/* ---------------- DELETE PERSON ---------------- */
 
-  response.status(204).end()
+app.delete('/api/persons/:id', (request, response, next) => {
+
+  Person.findByIdAndDelete(request.params.id)
+    .then(() => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
+
 })
 
-// POST new person
-app.post('/api/persons', (request, response) => {
+/* ---------------- ADD PERSON ---------------- */
+
+app.post('/api/persons', (request, response, next) => {
+
   const body = request.body
 
   if (!body.name || !body.number) {
@@ -69,37 +64,64 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
-  const nameExists = persons.some(p => p.name === body.name)
+  const person = new Person({
+    name: body.name,
+    number: body.number
+  })
 
-  if (nameExists) {
-    return response.status(400).json({
-      error: 'name must be unique'
+  person.save()
+    .then(savedPerson => {
+      response.json(savedPerson)
     })
-  }
+    .catch(error => next(error))
+
+})
+
+/* ---------------- UPDATE PERSON (Exercise 3.17) ---------------- */
+
+app.put('/api/persons/:id', (request, response, next) => {
+
+  const body = request.body
 
   const person = {
     name: body.name,
-    number: body.number,
-    id: Math.floor(Math.random() * 10000)
+    number: body.number
   }
 
-  persons = persons.concat(person)
-  response.json(person)
+  Person.findByIdAndUpdate(
+    request.params.id,
+    person,
+    { new: true, runValidators: true, context: 'query' }
+  )
+    .then(updatedPerson => {
+      response.json(updatedPerson)
+    })
+    .catch(error => next(error))
+
 })
 
-// INFO route
-app.get('/info', (request, response) => {
-  const date = new Date()
-  response.send(`
-    <p>Phonebook has info for ${persons.length} people</p>
-    <p>${date}</p>
-  `)
+/* ---------------- INFO ROUTE ---------------- */
+
+app.get('/info', (request, response, next) => {
+
+  Person.find({})
+    .then(persons => {
+
+      const date = new Date()
+
+      response.send(`
+        <p>Phonebook has info for ${persons.length} people</p>
+        <p>${date}</p>
+      `)
+
+    })
+    .catch(error => next(error))
+
 })
-app.use(express.static('dist'))
-// For React routing
-app.use((req, res) => {
-  res.sendFile(path.resolve(__dirname, 'dist', 'index.html'))
-})
+
+/* ---------------- ERROR HANDLER ---------------- */
+
+app.use(middleware.errorHandler)
 
 const PORT = process.env.PORT || 3001
 

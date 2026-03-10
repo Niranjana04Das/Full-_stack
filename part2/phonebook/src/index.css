@@ -53,6 +53,14 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+.error {
+  color: red;
+  background: lightgrey;
+  font-size: 18px;
+  border: 2px solid red;
+  padding: 10px;
+  margin-bottom: 10px;
+}
 
 @media (prefers-color-scheme: light) {
   :root {
